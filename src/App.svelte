@@ -1,8 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { JudgeEffect } from "./models/effect";
+  import { LongNote, Note } from "./models/note";
+  import { JudgeType } from "./static/judge";
 
   let start: boolean;
   let keydown: boolean;
+
+  let isJudging: boolean;
 
   let canvasRef: HTMLCanvasElement;
   let effectCanvasRef: HTMLCanvasElement;
@@ -17,38 +22,12 @@
   let timer: number;
 
   let perfect = 0;
-  let cool = 0;
+  let great = 0;
   let good = 0;
   let bad = 0;
   let miss = 0;
 
-  class Particle {
-    private _y: number;
-    private _color: string;
-    constructor(y: number) {
-      this._y = y;
-      this._color = "rgb(160, 179, 255)";
-    }
-
-    get y() {
-      return this._y;
-    }
-
-    update() {}
-
-    draw() {
-      ctx.fillStyle = this._color;
-      ctx.beginPath();
-      ctx.rect(0, this._y, 40, 5);
-      ctx.fill();
-    }
-  }
-
-  const notes: Particle[] = [];
-  for (let i = 0; i < 120; i++) {
-    if (i === 0) continue;
-    notes.push(new Particle(i * 128));
-  }
+  const notes: Array<Note | LongNote> = [];
 
   const deleteLastNote = () => {
     notes.pop();
@@ -68,7 +47,7 @@
 
     if (notes.length > 0) {
       distanceOfCurrentNote = 15360 - notes.at(-1).y - currentProgress;
-      if (distanceOfCurrentNote < -128) {
+      if (distanceOfCurrentNote < -64) {
         deleteLastNote();
         miss += 1;
       }
@@ -82,44 +61,7 @@
     }
   };
 
-  class EffectParticle {
-    private _size: number;
-    private _width: number;
-    private _color: string;
-    constructor(color: string) {
-      this._size = 0;
-      this._width = 10;
-      this._color = color;
-    }
-
-    get width() {
-      return this._width;
-    }
-
-    update() {
-      this._size = this._size + 1.5;
-      this._width = this._width - 0.5;
-    }
-
-    draw() {
-      if (this._width < 0) return;
-      effectCtx.strokeStyle = "rgb(255,255,255)";
-      effectCtx.shadowColor = this._color;
-      effectCtx.shadowBlur = 5;
-      effectCtx.beginPath();
-      effectCtx.arc(
-        effectCanvasRef.width / 2,
-        effectCanvasRef.height / 2,
-        this._size,
-        0,
-        2 * Math.PI
-      );
-      effectCtx.lineWidth = this._width;
-      effectCtx.stroke();
-    }
-  }
-
-  let effectParticles: EffectParticle[] = [];
+  let effectParticles: JudgeEffect[] = [];
 
   const animateEffect = () => {
     effectCtx.clearRect(0, 0, effectCanvasRef.width, effectCanvasRef.height);
@@ -128,17 +70,52 @@
         particle.draw();
         particle.update();
       });
-      effectParticles = effectParticles.filter(
-        (particle) => particle.width >= 0
-      );
+      effectParticles = effectParticles.filter((particle) => !particle.isEnded);
     }
     requestAnimationFrame(animateEffect);
+  };
+
+  const judge = () => {
+    isJudging = true;
+    if (notes.at(-1) instanceof Note) {
+      if (
+        (distanceOfCurrentNote >= -64 && distanceOfCurrentNote < -48) ||
+        (distanceOfCurrentNote <= 64 && distanceOfCurrentNote > 48)
+      ) {
+        bad += 1;
+      }
+      if (
+        (distanceOfCurrentNote >= -48 && distanceOfCurrentNote < -32) ||
+        (distanceOfCurrentNote <= 48 && distanceOfCurrentNote > 32)
+      ) {
+        good += 1;
+        effectParticles.push(new JudgeEffect(JudgeType.GOOD, effectCanvasRef));
+      }
+      if (
+        (distanceOfCurrentNote >= -32 && distanceOfCurrentNote < -16) ||
+        (distanceOfCurrentNote <= 32 && distanceOfCurrentNote > 16)
+      ) {
+        great += 1;
+        effectParticles.push(new JudgeEffect(JudgeType.GREAT, effectCanvasRef));
+      }
+      if (distanceOfCurrentNote >= -16 && distanceOfCurrentNote <= 16) {
+        perfect += 1;
+        effectParticles.push(
+          new JudgeEffect(JudgeType.PERFECT, effectCanvasRef)
+        );
+      }
+    }
+    deleteLastNote();
   };
 
   onMount(() => {
     canvasRef.width = 40;
     canvasRef.height = 15360;
     ctx = canvasRef.getContext("2d");
+    for (let i = 0; i < 120; i++) {
+      if (i === 0) continue;
+      notes.push(new Note(i * 128, canvasRef));
+    }
     notes.forEach((note) => note.draw());
 
     effectCanvasRef.width = 60;
@@ -149,34 +126,8 @@
       if (e.key === "a") {
         keydown = true;
         if (!start) return;
-        if (
-          (distanceOfCurrentNote >= -128 && distanceOfCurrentNote < -64) ||
-          (distanceOfCurrentNote <= 128 && distanceOfCurrentNote > 64)
-        ) {
-          deleteLastNote();
-          bad += 1;
-        }
-        if (
-          (distanceOfCurrentNote >= -64 && distanceOfCurrentNote < -32) ||
-          (distanceOfCurrentNote <= 64 && distanceOfCurrentNote > 32)
-        ) {
-          deleteLastNote();
-          good += 1;
-          effectParticles.push(new EffectParticle("rgb(34, 255, 0)"));
-        }
-        if (
-          (distanceOfCurrentNote >= -32 && distanceOfCurrentNote < -16) ||
-          (distanceOfCurrentNote <= 32 && distanceOfCurrentNote > 16)
-        ) {
-          deleteLastNote();
-          cool += 1;
-          effectParticles.push(new EffectParticle("rgb(0, 217, 255)"));
-        }
-        if (distanceOfCurrentNote >= -16 && distanceOfCurrentNote <= 16) {
-          deleteLastNote();
-          perfect += 1;
-          effectParticles.push(new EffectParticle("rgb(0, 21, 255)"));
-        }
+        if (isJudging) return;
+        judge();
       }
       if (e.key === "Enter") {
         if (start) return;
@@ -192,6 +143,7 @@
     window.addEventListener("keyup", (e) => {
       if (e.key === "a") {
         keydown = false;
+        isJudging = false;
       }
     });
   });
@@ -201,7 +153,7 @@
   <div style="color: white; position: absolute">
     <div>{count}</div>
     <div>perfect: {perfect}</div>
-    <div>cool: {cool}</div>
+    <div>great: {great}</div>
     <div>good: {good}</div>
     <div>bad: {bad}</div>
     <div>miss: {miss}</div>
