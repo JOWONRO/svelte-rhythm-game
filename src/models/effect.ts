@@ -54,3 +54,63 @@ export class JudgeEffect {
     this._ctx.stroke();
   }
 }
+
+// useEffect(() => {
+//   if (!canvasRef.current) return
+//   canvasRef.current.width = 200
+//   canvasRef.current.height = 200
+//   const ctx = canvasRef.current.getContext('2d') as CanvasRenderingContext2D
+
+//   ctx.globalCompositeOperation = 'lighter'
+//   ctx.filter = 'blur(5px)'
+//   ctx.fillStyle = '#ffffff'
+//   ctx.shadowColor = 'rgba(255, 0, 0, 1)'
+//   ctx.shadowBlur = 10
+//   ctx.shadowOffsetX = 10
+//   ctx.shadowOffsetY = 10
+//   ctx.beginPath()
+//   ctx.rect(
+//     canvasRef.current.width / 2 - 20,
+//     canvasRef.current.height / 2 - 2.5,
+//     40,
+//     5,
+//   )
+//   ctx.fill()
+
+//   ctx.filter = 'blur(5px)'
+//   ctx.shadowColor = '#0015ff'
+//   ctx.shadowBlur = 10
+//   ctx.shadowOffsetX = -10
+//   ctx.shadowOffsetY = -10
+//   ctx.beginPath()
+//   ctx.rect(
+//     canvasRef.current.width / 2 - 20,
+//     canvasRef.current.height / 2 - 2.5,
+//     40,
+//     5,
+//   )
+//   ctx.fill()
+
+//   ctx.filter = 'blur(10px)'
+//   ctx.shadowOffsetX = 0
+//   ctx.shadowOffsetY = 0
+//   ctx.beginPath()
+//   ctx.moveTo(canvasRef.current.width / 2, 93)
+//   ctx.lineTo(canvasRef.current.width - 20, canvasRef.current.height / 2)
+//   ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height - 93)
+//   ctx.lineTo(20, canvasRef.current.height / 2)
+//   ctx.closePath()
+//   ctx.fill()
+
+//   ctx.filter = 'blur(5px)'
+//   ctx.strokeStyle = '#FFFFFF'
+//   ctx.beginPath()
+//   ctx.arc(
+//     canvasRef.current.width / 2,
+//     canvasRef.current.height / 2,
+//     30,
+//     0,
+//     2 * Math.PI,
+//   )
+//   ctx.stroke()
+// }, [])

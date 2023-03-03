@@ -31,7 +31,7 @@ export class Note {
   draw() {
     this._ctx.fillStyle = this._color;
     this._ctx.beginPath();
-    this._ctx.rect(0, this._y, this._canvas.width, 5);
+    this._ctx.rect(0, this._y, this._canvas.width, -5);
     this._ctx.fill();
   }
 }
@@ -63,7 +63,7 @@ export class LongNote extends Note {
   draw() {
     this.ctx.fillStyle = this.color;
     this.ctx.beginPath();
-    this.ctx.rect(0, this.y, this.canvas.width, 5 + this._range);
+    this.ctx.rect(0, this.y, this.canvas.width, -5 - this._range);
     this.ctx.fill();
   }
 }

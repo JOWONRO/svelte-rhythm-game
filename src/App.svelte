@@ -8,6 +8,8 @@
   let keydown: boolean;
 
   let isJudging: boolean;
+  let isJudgingLong: boolean;
+  let currentJudge: JudgeType;
 
   let canvasRef: HTMLCanvasElement;
   let effectCanvasRef: HTMLCanvasElement;
@@ -76,58 +78,111 @@
   };
 
   const judge = () => {
-    isJudging = true;
-    if (notes.at(-1) instanceof Note) {
-      if (
-        (distanceOfCurrentNote >= -64 && distanceOfCurrentNote < -48) ||
-        (distanceOfCurrentNote <= 64 && distanceOfCurrentNote > 48)
-      ) {
-        bad += 1;
-      }
-      if (
-        (distanceOfCurrentNote >= -48 && distanceOfCurrentNote < -32) ||
-        (distanceOfCurrentNote <= 48 && distanceOfCurrentNote > 32)
-      ) {
-        good += 1;
-        effectParticles.push(new JudgeEffect(JudgeType.GOOD, effectCanvasRef));
-      }
-      if (
-        (distanceOfCurrentNote >= -32 && distanceOfCurrentNote < -16) ||
-        (distanceOfCurrentNote <= 32 && distanceOfCurrentNote > 16)
-      ) {
-        great += 1;
-        effectParticles.push(new JudgeEffect(JudgeType.GREAT, effectCanvasRef));
-      }
-      if (distanceOfCurrentNote >= -16 && distanceOfCurrentNote <= 16) {
-        perfect += 1;
-        effectParticles.push(
-          new JudgeEffect(JudgeType.PERFECT, effectCanvasRef)
-        );
-      }
+    const lastNote = notes.at(-1);
+
+    if (lastNote instanceof Note) {
+      judgeNote();
+    }
+    if (lastNote instanceof LongNote) {
+      judgeNote();
+    }
+  };
+
+  const judgeNote = () => {
+    if (isJudging) return;
+    if (distanceOfCurrentNote < -64 || distanceOfCurrentNote > 64) return;
+    if (distanceOfCurrentNote >= -16 && distanceOfCurrentNote <= 16) {
+      perfect += 1;
+      effectParticles.push(new JudgeEffect(JudgeType.PERFECT, effectCanvasRef));
+    }
+    if (
+      (distanceOfCurrentNote >= -32 && distanceOfCurrentNote < -16) ||
+      (distanceOfCurrentNote <= 32 && distanceOfCurrentNote > 16)
+    ) {
+      great += 1;
+      effectParticles.push(new JudgeEffect(JudgeType.GREAT, effectCanvasRef));
+    }
+    if (
+      (distanceOfCurrentNote >= -48 && distanceOfCurrentNote < -32) ||
+      (distanceOfCurrentNote <= 48 && distanceOfCurrentNote > 32)
+    ) {
+      good += 1;
+      effectParticles.push(new JudgeEffect(JudgeType.GOOD, effectCanvasRef));
+    }
+    if (
+      (distanceOfCurrentNote >= -64 && distanceOfCurrentNote < -48) ||
+      (distanceOfCurrentNote <= 64 && distanceOfCurrentNote > 48)
+    ) {
+      bad += 1;
     }
     deleteLastNote();
+  };
+
+  const judgeLongNote = () => {
+    if (isJudging && !isJudgingLong) return;
+    if (distanceOfCurrentNote < -64 || distanceOfCurrentNote > 64) return;
+    if (distanceOfCurrentNote >= -16 && distanceOfCurrentNote <= 16) {
+      perfect += 1;
+      effectParticles.push(new JudgeEffect(JudgeType.PERFECT, effectCanvasRef));
+      isJudgingLong = true;
+      currentJudge = JudgeType.PERFECT;
+    }
+    if (
+      (distanceOfCurrentNote >= -32 && distanceOfCurrentNote < -16) ||
+      (distanceOfCurrentNote <= 32 && distanceOfCurrentNote > 16)
+    ) {
+      great += 1;
+      effectParticles.push(new JudgeEffect(JudgeType.GREAT, effectCanvasRef));
+      isJudgingLong = true;
+      currentJudge = JudgeType.GREAT;
+    }
+    if (
+      (distanceOfCurrentNote >= -48 && distanceOfCurrentNote < -32) ||
+      (distanceOfCurrentNote <= 48 && distanceOfCurrentNote > 32)
+    ) {
+      good += 1;
+      isJudgingLong = true;
+      currentJudge = JudgeType.GOOD;
+    }
+    if (
+      (distanceOfCurrentNote >= -64 && distanceOfCurrentNote < -48) ||
+      (distanceOfCurrentNote <= 64 && distanceOfCurrentNote > 48)
+    ) {
+      bad += 1;
+      deleteLastNote();
+    }
   };
 
   onMount(() => {
     canvasRef.width = 40;
     canvasRef.height = 15360;
     ctx = canvasRef.getContext("2d");
+
     for (let i = 0; i < 120; i++) {
       if (i === 0) continue;
+      if (i === 117 || i === 112 || i === 109) continue;
+      if (i === 110 || i === 113 || i === 118) {
+        notes.push(new LongNote(i * 128, canvasRef, 128));
+      }
       notes.push(new Note(i * 128, canvasRef));
     }
     notes.forEach((note) => note.draw());
 
-    effectCanvasRef.width = 60;
-    effectCanvasRef.height = 60;
+    effectCanvasRef.width = 100;
+    effectCanvasRef.height = 100;
     effectCtx = effectCanvasRef.getContext("2d");
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "a") {
         keydown = true;
         if (!start) return;
-        if (isJudging) return;
-        judge();
+        const lastNote = notes.at(-1);
+        if (lastNote instanceof Note) {
+          judgeNote();
+        }
+        if (lastNote instanceof LongNote) {
+          judgeLongNote();
+        }
       }
       if (e.key === "Enter") {
         if (start) return;
@@ -220,7 +275,6 @@
           rgba(255, 255, 255, 0) 76%
         );
         opacity: 0;
-        transition: opacity 0.05s;
         &.light {
           opacity: 1;
         }
@@ -242,15 +296,6 @@
           background: rgb(219, 229, 255);
         }
       }
-    }
-  }
-
-  @keyframes pop {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(100%);
     }
   }
 </style>
